@@ -3,12 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # parameters to modify
-filename="test.data"
-label='label'
-xlabel = 'xlabel'
-ylabel = 'ylabel'
-title='Simple plot'
-fig_name='test.png'
+filename="iperf3_TCP.txt"
+label='iperf3'
+xlabel = 'time/s'
+ylabel = 'measured bandwidth'
+title='Iperf3 test 1'
+fig_name='iperf3_TCP.png'
 bins=100 #adjust the number of bins to your plot
 
 
