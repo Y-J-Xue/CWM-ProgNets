@@ -14,6 +14,9 @@ header ethernet_t {
 	//macAddr_t type destination address
 	//macAddr_t type source address
 	//16 bit etherType
+	macAddr_t dstAddr;
+	macAddr_t srcAddr;
+	bit<16>	  etherType;
 }
 
 struct metadata {
@@ -22,6 +25,8 @@ struct metadata {
 
 struct headers {
 	//TODO: define a header ethernet of type ethernet_t
+	ethernet_t ethernet;
+	ipv4_t     ipv4;
 }
 
 /*************************************************************************
@@ -36,6 +41,8 @@ parser MyParser(packet_in packet,
     state start {
 	//TODO: define a state that extracts the ethernet header
 	//and transitions to accept
+	packet.extract(hdr.ethernet);
+	transition accept;
     }
 
 }
@@ -62,8 +69,12 @@ control MyIngress(inout headers hdr,
        macAddr_t tmp_mac;
        //TODO: swap source and destination MAC addresses
        //use the defined temp variable tmp_mac
+       tmp_mac = hdr.ethernet.dstAddr;
+       hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
+       hdr.ethernet.srcAddr = tmp_mac;
 
        //TODO: send the packet back to the same port
+       standard_metadata.egress_spec = standard_metadata.ingress_port;
     }
     
     action drop() {
@@ -73,18 +84,27 @@ control MyIngress(inout headers hdr,
     table src_mac_drop {
         key = {
 	   //TODO: define an exact match key using the source MAC address
+	   hdr.ethernet.srcAddr : exact;
         }
         actions = {
 	   //TODO: define 3 actions: swap_mac_addresses, drop, NoAction.
+	   swap_mac_addresses;
+	   drop;
+	   NoAction;
         }
         //TODO: define a table size of 1024 entries
+        size = 1024;
 
 	//TODO: define the default action to return the packet to the source
+	default_action = swap_mac_addresses();
     }
     
     apply {
     	//TODO: Check if the Ethernet header is valid
+    	if (hdr.ethernet.isValid()){
 	//if so, lookup the source MAC in the table and decide what to do
+	    src_mac_drop.apply();
+    	}
     }
 }
        
@@ -120,6 +140,7 @@ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
 control MyDeparser(packet_out packet, in headers hdr) {
     apply {
 	//TODO: emit the packet with a valid Ethernet header
+	packet.emit(hdr.ethernet);
     }
 }
 
