@@ -9,11 +9,11 @@ class P4tra(Packet):
     fields_desc = [ StrFixedLenField("P", "P", length=1),
                     StrFixedLenField("Four", "4", length=1),
                     XByteField("version", 0x01),
-                    IntField("act", 0),
-                    IntField("identifier", 0),
-                    IntField("quantity", 0),
-                    IntField("bought price", 0xDEADBABE)]
-                    IntField("current price", 0xDEADBEEF)]
+                    ShortField("identifier", 0),
+                    ShortField("quantity", 0),
+                    IntField("bought_price", 0xDEADBABE),
+                    IntField("current_price", 0xDEADBEEF),
+                    ByteField("decision", 0)]
 
 bind_layers(Ether, P4tra, type=0x1234)
 
@@ -67,7 +67,7 @@ def get_if():
 
 def main():
 
-    p = make_seq(num_parser, make_seq(num_parser,num_parser))
+    p = make_seq(num_parser, make_seq(num_parser, make_seq(num_parser,num_parser)))
     s = ''
     #iface = get_if()
     iface = "enx0c37965f8a25"
@@ -79,10 +79,12 @@ def main():
         print(s)
         try:
             i,ts = p(s,0,[])
-            pkt = Ether(dst='00:04:00:00:00:00', type=0x1234) / P4tra(iden=ts[0].value,
-                                              Q=int(ts[1].value),
-                                              P1=int(ts[2].value)
-                                              P2=int(ts[3].value))
+            #print(ts[0].value, ts[1].value, ts[2].value, ts[3].value)
+            pkt = Ether(dst='00:04:00:00:00:00', type=0x1234) / P4tra(
+            				      identifier=int(ts[0].value),
+                                              quantity=int(ts[1].value),
+                                              bought_price=int(ts[2].value),
+                                              current_price=int(ts[3].value))
 
             pkt = pkt/' '
 

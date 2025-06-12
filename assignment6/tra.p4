@@ -10,7 +10,7 @@
  *
  *        0                1                  2              3
  * +----------------+----------------+----------------+---------------+
- * |      P         |       4        |     Version    |     Act       |
+ * |      P         |       4        |     Version    |     Dec       |
  * +----------------+----------------+----------------+---------------+
  * |            Identifier           |             Quantity           |
  * +----------------+----------------+----------------+---------------+
@@ -22,9 +22,9 @@
  * P is an ASCII Letter 'P' (0x50)
  * 4 is an ASCII Letter '4' (0x34)
  * Version is currently 0.1 (0x01)
- * Act is an action to take: 
- *	If deciding to buy, Act = 0
-  *	If deciding to sell, Act = 1
+ * Dec is an decison to take: 
+ *	If deciding to buy, Dec = 0
+ *	If deciding to sell, Dec = 1
  * Identifier: name of the stock
  * Quantity: quantity of the stock held, or to be transacted
  * Bought Price: price of the stock when bought
@@ -66,11 +66,11 @@ header p4tra_t {
     bit<8>  p;
     bit<8>  four;
     bit<8>  ver;
-    bit<8>  act;
-    bit<16>  iden;
+    bit<16>  identifier;
     bit<16>  Q;
     bit<32>  P1;
     bit<32>  P2;
+    bit<8>  act;
 }
 
 /*
@@ -143,8 +143,7 @@ control MyIngress(inout headers hdr,
                   inout standard_metadata_t standard_metadata) {
     bit<48> tmp;
         
-    action send_back(bit<8>   decision,
-     		     bit<16>  quantity) {
+    action send_back(bit<8> decision) {
         /* TODO
          * - put ...
          * - swap MAC addresses in hdr.ethernet.dstAddr and
@@ -154,7 +153,7 @@ control MyIngress(inout headers hdr,
              standard_metadata.egress_spec
          */
          hdr.p4tra.act = decision;
-         hdr.p4tra.Q = quantity;
+         hdr.p4tra.Q = hdr.p4tra.Q>>2;
 
          tmp = hdr.ethernet.dstAddr;
          hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
@@ -163,13 +162,11 @@ control MyIngress(inout headers hdr,
     }
 
     action buy() {
-        send_back(0,
-        	  hdr.p4tra.Q / 2);
+        send_back(0);
     }
 
     action sell() {
-        send_back(1,
-        	  hdr.p4tra.Q / 2);
+        send_back(1);
     }
 
     action act_drop() {
@@ -194,7 +191,7 @@ control MyIngress(inout headers hdr,
 
     apply {
         if (hdr.p4tra.isValid()) {
-            	if (hdr.p4tra.P1 < hdr.p4tra.P2 == true){
+            	if (hdr.p4tra.P1 < hdr.p4tra.P2){
 		hdr.p4tra.act = 1;
 		} else {
 		hdr.p4tra.act = 0;
