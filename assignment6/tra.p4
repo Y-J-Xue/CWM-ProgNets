@@ -22,9 +22,9 @@
  * P is an ASCII Letter 'P' (0x50)
  * 4 is an ASCII Letter '4' (0x34)
  * Version is currently 0.1 (0x01)
- * Act is an action to take: (buy = 0, sell =1)
- *	If receiving 0, Act = 1
-  *	If receiving 1, Act = 0
+ * Act is an action to take: 
+ *	If deciding to buy, Act = 0
+  *	If deciding to sell, Act = 1
  * Identifier: name of the stock
  * Quantity: quantity of the stock held, or to be transacted
  * Bought Price: price of the stock when bought
@@ -56,9 +56,9 @@ header ethernet_t {
  * etherType 0x1234 for it (see parser)
  */
 const bit<16> P4TRA_ETYPE = 0x1234;
-const bit<8>  P4CALC_P    = 0x50;   // 'P'
-const bit<8>  P4CALC_4    = 0x34;   // '4'
-const bit<8>  P4CALC_VER  = 0x01;   // v0.1
+const bit<8>  P4TRA_P    = 0x50;   // 'P'
+const bit<8>  P4TRA_4    = 0x34;   // '4'
+const bit<8>  P4TRA_VER  = 0x01;   // v0.1
 const bit<8>  P4TRA_BUY   = 0;
 const bit<8>  P4TRA_SELL  = 1;
 
@@ -67,7 +67,7 @@ header p4tra_t {
     bit<8>  four;
     bit<8>  ver;
     bit<8>  act;
-    bit<16>  id;
+    bit<16>  iden;
     bit<16>  Q;
     bit<32>  P1;
     bit<32>  P2;
@@ -142,6 +142,7 @@ control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
     bit<48> tmp;
+        
     action send_back(bit<8>   decision,
      		     bit<16>  quantity) {
         /* TODO
@@ -163,21 +164,21 @@ control MyIngress(inout headers hdr,
 
     action buy() {
         send_back(0,
-        	  hdr.p4tra.Q * 0.5);
+        	  hdr.p4tra.Q / 2);
     }
 
     action sell() {
         send_back(1,
-        	  hdr.p4tra.Q * 0.5);
+        	  hdr.p4tra.Q / 2);
     }
-101
+
     action act_drop() {
         mark_to_drop(standard_metadata);
     }
 
     table calculate {
         key = {
-            hdr.p4tra.P1 < hdr.p4tra.P2  : exact;
+            hdr.p4tra.act  : exact;
         }
         actions = {
             buy;
@@ -193,6 +194,11 @@ control MyIngress(inout headers hdr,
 
     apply {
         if (hdr.p4tra.isValid()) {
+            	if (hdr.p4tra.P1 < hdr.p4tra.P2 == true){
+		hdr.p4tra.act = 1;
+		} else {
+		hdr.p4tra.act = 0;
+		}
             calculate.apply();
         } else {
             act_drop();

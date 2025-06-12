@@ -10,7 +10,7 @@ class P4tra(Packet):
                     StrFixedLenField("Four", "4", length=1),
                     XByteField("version", 0x01),
                     IntField("act", 0),
-                    
+                    IntField("identifier", 0),
                     IntField("quantity", 0),
                     IntField("bought price", 0xDEADBABE)]
                     IntField("current price", 0xDEADBEEF)]
@@ -37,13 +37,13 @@ def num_parser(s, i, ts):
     raise NumParseError('Expected number literal.')
 
 
-def op_parser(s, i, ts):
-    pattern = "^\s*([-+&|^])\s*"
-    match = re.match(pattern,s[i:])
-    if match:
-        ts.append(Token('num', match.group(1)))
-        return i + match.end(), ts
-    raise NumParseError("Expected binary operator '-', '+', '&', '|', or '^'.")
+#def op_parser(s, i, ts):
+#    pattern = "^\s*([-+&|^])\s*"
+#   match = re.match(pattern,s[i:])
+#    if match:
+#        ts.append(Token('num', match.group(1)))
+#        return i + match.end(), ts
+#    raise NumParseError("Expected binary operator '-', '+', '&', '|', or '^'.")
 
 
 def make_seq(p1, p2):
@@ -67,7 +67,7 @@ def get_if():
 
 def main():
 
-    p = make_seq(num_parser, make_seq(op_parser,num_parser))
+    p = make_seq(num_parser, make_seq(num_parser,num_parser))
     s = ''
     #iface = get_if()
     iface = "enx0c37965f8a25"
@@ -79,20 +79,21 @@ def main():
         print(s)
         try:
             i,ts = p(s,0,[])
-            pkt = Ether(dst='00:04:00:00:00:00', type=0x1234) / P4calc(op=ts[1].value,
-                                              operand_a=int(ts[0].value),
-                                              operand_b=int(ts[2].value))
+            pkt = Ether(dst='00:04:00:00:00:00', type=0x1234) / P4tra(iden=ts[0].value,
+                                              Q=int(ts[1].value),
+                                              P1=int(ts[2].value)
+                                              P2=int(ts[3].value))
 
             pkt = pkt/' '
 
             #pkt.show()
             resp = srp1(pkt, iface=iface,timeout=5, verbose=False)
             if resp:
-                p4calc=resp[P4calc]
-                if p4calc:
-                    print(p4calc.result)
+                p4tra=resp[P4tra]
+                if p4tra:
+                    print(p4tra.decision)
                 else:
-                    print("cannot find P4calc header in the packet")
+                    print("cannot find P4tra header in the packet")
             else:
                 print("Didn't receive response")
         except Exception as error:
