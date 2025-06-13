@@ -94,6 +94,7 @@ def main():
                 p4tra=resp[P4tra]
                 if p4tra:
                     print(p4tra.decision)
+                    print(p4tra.identifier, p4tra.quantity, p4tra.bought_price, p4tra.current_price)
                 else:
                     print("cannot find P4tra header in the packet")
             else:

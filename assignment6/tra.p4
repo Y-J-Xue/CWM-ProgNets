@@ -153,7 +153,7 @@ control MyIngress(inout headers hdr,
              standard_metadata.egress_spec
          */
          hdr.p4tra.act = decision;
-         hdr.p4tra.Q = hdr.p4tra.Q>>2;
+         hdr.p4tra.Q = hdr.p4tra.Q>>1;
 
          tmp = hdr.ethernet.dstAddr;
          hdr.ethernet.dstAddr = hdr.ethernet.srcAddr;
